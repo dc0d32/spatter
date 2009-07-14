@@ -1,0 +1,5 @@
+ 
+ 
+ checkout as 
+ svn --username prashant co svn://10.6.0.90/tindc/trunk tindc
+

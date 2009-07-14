@@ -1,0 +1,7 @@
+the usual install way.
+
+./configure
+make
+sudo make install
+make installcheck
+
