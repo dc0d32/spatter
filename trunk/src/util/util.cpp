@@ -10,13 +10,6 @@
 
 #include <sstream>
 
-#ifdef USE_OPENSSL_SHA
-#include <openssl/sha.h>
-#include <openssl/crypto.h>
-#include <openssl/evp.h>
-#endif
-
-
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
@@ -51,36 +44,13 @@ std::string	ip_num_to_str(uint32_t	ip)
 
 void	calculate_hash(const std::string&	str, uint8_t	*hash)
 {
-#ifdef USE_OPENSSL_SHA1
-	EVP_Digest(str.c_str(), str.length(), hash, NULL, EVP_sha1(), NULL);
-#else
 	tiger((uint64_t*)str.c_str(), (uint64_t)str.length(), (uint64_t*)hash);
 	std::cout << "hash for " << str << " = " << ((uint64_t*)hash)[0] + ((uint64_t*)hash)[1] + ((uint64_t*)hash)[2] << std::endl;
-#endif
 }
 
 void	calculate_hash(std::istream	stream, uint8_t	*hash)
 {
-#ifdef USE_OPENSSL_SHA1
-
-	EVP_MD_CTX	*context = EVP_MD_CTX_create();
-	EVP_DigestInit(context, EVP_sha1());
-
-#define	HASH_READ_BUFFER_SIZE	(512*1024)
-	char	*buffer = new char[HASH_READ_BUFFER_SIZE];
-	while(stream.good())
-	{
-		size_t	bytes_read = stream.readsome(buffer, HASH_READ_BUFFER_SIZE);
-		EVP_DigestUpdate(context, buffer, bytes_read);
-	}
-#undef	HASH_READ_BUFFER_SIZE
-	delete[]	buffer;
-
-	EVP_DigestFinal(context, hash, NULL);
-
-#else
-
-#endif
+	// TODO implement ~streaming version of tiger
 }
 
 void init_util()
