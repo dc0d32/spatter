@@ -22,11 +22,7 @@
 #define		SEARCH_RESULT_MESSAGE	((uint8_t)	3)
 #define		PING_MESSAGE			((uint8_t)	4)
 
-#ifdef USE_OPENSSL_SHA1
-	#define HASH_BYTES	(20)
-#else
-	#define HASH_BYTES	(24)
-#endif
+#define HASH_BYTES	(24)
 
 typedef struct __hash
 {
@@ -117,6 +113,10 @@ typedef struct __file_info_record
 	uint64_t	size;
 	file_type	type;
 	uint64_t	modTS;
+
+	uint32_t	owner_publish_ts;
+	uint32_t	valid_till;	// time to live, if this record is found in local table after it has expired, it will be deleted.
+
 	// maybe add more file info like perceived popularity/number of downloads, community rating (needs a separate message type) etc.
 
 	__file_info_record()
@@ -137,6 +137,9 @@ typedef struct __file_info_record
 		ar & size;
 		ar & type;
 		ar & modTS;
+
+		ar & owner_publish_ts;
+		ar & valid_till;
 	}
 
 	bool	operator==(const __file_info_record&	f) const
@@ -147,6 +150,7 @@ typedef struct __file_info_record
 				&&(size == f.size)
 				&&(type == f.type)
 				&&(modTS == f.modTS)
+				&&(owner_publish_ts == f.owner_publish_ts)		/* same record when sent again, should not match the older one. On similar lines, the client should choose latest one over stale ones. */
 				);
 	}
 
@@ -253,7 +257,7 @@ std::size_t hash_value(const ping_message& p);
 
 
 // update these as we add/remove fields from message structures
-BOOST_CLASS_VERSION(publish_message, 1)
+BOOST_CLASS_VERSION(publish_message, 2)
 BOOST_CLASS_VERSION(search_message, 1)
 BOOST_CLASS_VERSION(search_result_message, 1)
 

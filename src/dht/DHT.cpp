@@ -9,7 +9,11 @@
 #include "../util/util.hpp"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/thread.hpp>
+
 #include <algorithm>
+
+boost::shared_mutex	file_hash_mtx;
 
 DHT::DHT(const std::string	&ip, uint16_t	port)
 {
@@ -55,15 +59,27 @@ DHT*	DHT::singletonObject = NULL;
 
 void DHT::insertFileInfoRecord(const file_info_record&	record)
 {
-	boost::unordered_map<hash, std::list<file_info_record> >::iterator	itr = hashTable.find(record.key);
+
+	boost::unordered_map<hash, std::list<file_info_record> >::iterator	itr;
+
+	{
+		boost::shared_lock<boost::shared_mutex>	__lock(file_hash_mtx);
+		itr = hashTable.find(record.key);
+	}
+
 	if(itr == hashTable.end())
 	{
 		std::list<file_info_record>	l;
 		l.push_back(record);
-		hashTable.insert(std::make_pair(record.key, l));
+		{
+			boost::unique_lock<boost::shared_mutex>	__lock(file_hash_mtx);
+			hashTable.insert(std::make_pair(record.key, l));
+		}
 	}
 	else
 	{
+		boost::unique_lock<boost::shared_mutex>	__lock(file_hash_mtx);
+
 		std::list<file_info_record>	*l = &itr->second;
 		if(std::find(l->begin(), l->end(), record) == l->end())
 		{
@@ -74,6 +90,8 @@ void DHT::insertFileInfoRecord(const file_info_record&	record)
 
 std::list<file_info_record> DHT::query(const hash&	h)
 {
+	boost::shared_lock<boost::shared_mutex>	__lock(file_hash_mtx);
+
 	std::list<file_info_record>	l;
 
 	boost::unordered_map<hash, std::list<file_info_record> >::iterator	itr = hashTable.find(h);
